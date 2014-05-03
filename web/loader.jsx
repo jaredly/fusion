@@ -1,12 +1,24 @@
 /** @jsx React.DOM */
 
 var Main = require('./main.jsx')
+  , utils = require('./utils')
 
 var Loader = module.exports = React.createClass({
   displayName: 'Loader',
   getInitialState: function () {
+    var hash = window.location.hash
+      , filename = ''
+      , cssname = ''
+      , loading = ''
+      , parts
+    if (hash && hash.indexOf('||') !== -1) {
+      parts = hash.slice(1).split('||')
+      filename = parts[0]
+      cssname = parts[1]
+    }
     return {
-      filename: '',
+      filename: filename,
+      cssname: cssname,
       loading: false,
       fresh: true,
       error: null,
@@ -18,29 +30,48 @@ var Loader = module.exports = React.createClass({
       register: this.register
     }
   },
+  changeCss: function (e) {
+    this.setState({cssname: e.target.value})
+  },
   changeName: function (e) {
-    this.setState({filename: e.target.name})
+    this.setState({filename: e.target.value})
   },
   register: function (component, file, data) {
     var components = this.state.components
     components[file] = {
-      cls: components,
+      cls: component,
       file: file,
       fixture: data
     }
     this.setState({components: components})
   },
-  load: function (filename) {
+  load: function (filename, cssname) {
+    window.location.hash = '#' + filename + '||' + cssname
     this.setState({
       filename: filename,
+      cssname: cssname,
       components: {},
       loading: true
     })
-    var script = document.createElement('script')
-    script.src = filename
-    script.addEventListener('error', this.loadError)
-    script.addEventListener('load', this.loaded)
-    document.body.appendChild(script)
+    utils.addScript(filename, function (err) {
+      if (err) {
+        this.setState({
+          loading: false,
+          error: 'failed to load',
+          fresh: true
+        })
+        return
+      }
+      this.setState({
+        loading: false,
+        fresh: false
+      })
+    }.bind(this))
+    utils.addCss(cssname, function (err) {
+      if (err) {
+        console.error('Failed to load css!!!', err)
+      }
+    })
   },
   loaded: function () {
     this.setState({
@@ -52,32 +83,32 @@ var Loader = module.exports = React.createClass({
     console.log('load error')
     this.setState({
       loading: false,
-      error: 'failed to load'
+      error: 'failed to load',
       fresh: true
     })
   },
   loadit: function () {
-    this.load(this.state.filename)
+    this.load(this.state.filename, this.state.cssname)
   },
   reload: function () {
-    this.load(this.state.filename)
+    this.load(this.state.filename, this.state.cssname)
   },
-  changeFixture: function (comp, pname, name, data) {
+  changeFixture: function (comp, pname, name, data, done) {
     var c = this.state.components[comp]
-    if (c.fixtures[name]) return false
     if (pname !== name) {
-      delete c.fixtures[pname]
+      if (c.fixture[name]) return false
+      delete c.fixture[pname]
     }
-    c.fixtures[name] = data
+    c.fixture[name] = data
     // TODO update, don't mutate
-    this.setState({components: this.state.components})
+    this.setState({components: this.state.components}, done)
   },
-  newFixture: function (comp, name, data) {
+  newFixture: function (comp, name, data, done) {
     var c = this.state.components[comp]
-    if (c.fixtures[name]) return false
-    c.fixtures[name] = data
+    if (c.fixture[name]) return false
+    c.fixture[name] = data
     // TODO update, don't mutate
-    this.setState({components: this.state.components})
+    this.setState({components: this.state.components}, done)
   },
   close: function () {
     this.setState({
@@ -107,8 +138,10 @@ var Loader = module.exports = React.createClass({
           script tag, so if you're currently on a local file:// then it needs to
           be there too.
         </p>
-        <input onChange={this.changeName} value={this.state.filename}/>
+        <input placeholder='JS Bundle' onChange={this.changeName} value={this.state.filename}/>
+        <input placeholder='CSS Bundle' onChange={this.changeCss} value={this.state.cssname}/>
         <button onClick={this.loadit}>Load</button>
+        {this.state.error && React.DOM.span({className: 'fusion-load-error'}, this.state.error)}
       </div>
     )
   }

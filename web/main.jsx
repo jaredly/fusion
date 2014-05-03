@@ -40,7 +40,7 @@ var Main = module.exports = React.createClass({
       propsName: name === '__default__' ? '' : name,
       currentProps: name,
       propsRaw: this.getRawData(this.state.currentComponent, name)
-    })
+    }, this.resetChild)
   },
   getRawData: function (comp, name) {
     var component = this.props.components[comp]
@@ -77,7 +77,8 @@ var Main = module.exports = React.createClass({
       this.state.currentComponent,
       this.state.currentProps,
       this.state.propsName,
-      this.state.propsRaw
+      data,
+      this.resetChild
     )
     this.setState({
       currentProps: this.state.propsName
@@ -96,7 +97,8 @@ var Main = module.exports = React.createClass({
     this.props.newFixture(
       this.state.currentComponent,
       this.state.propsName,
-      this.state.propsRaw
+      data,
+      this.resetChild
     )
     this.setState({
       currentProps: this.state.propsName
@@ -107,12 +109,21 @@ var Main = module.exports = React.createClass({
       propsRaw: e.target.value
     })
   },
+  /*
+  componentWillReceiveProps: function (oprops, ostate) {
+    this.resetChild()
+  },
+  */
+  resetChild: function () {
+    this.refs.display.replaceState(this.refs.display.getInitialState())
+  },
   render: function () {
     var components = this.props.components
       , names = Object.keys(components)
       , current = this.props.components[this.state.currentComponent]
       , props = Object.keys(current.fixture)
       , cprops = this.state.currentProps === '__default__' ? {} : current.fixture[this.state.currentProps]
+    cprops.ref = 'display'
     return (
       <div className='fusion-main'>
         <div ref='display' className='fusion-display'>
@@ -142,7 +153,7 @@ var Main = module.exports = React.createClass({
           <textarea
             className='fusion-props-raw'
             onChange={this.changePropsRaw}
-            value={this.state.propsRaw}>{this.state.propsRaw}</textarea>
+            value={this.state.propsRaw}></textarea>
           {this.state.propsError || false}
           {this.state.currentProps === '__default__' ? false : React.DOM.button({onClick: this.applyProps}, 'Apply')}
           <button onClick={this.newProps}>Save as New</button>

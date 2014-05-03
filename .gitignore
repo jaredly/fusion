@@ -1,3 +1,6 @@
 *.swp
 node_modules
 example/build
+example/fusion.css
+example/fusion.css.map
+example/fusion.js
