@@ -1,5 +1,5 @@
 {
-  "name": "fusion",
+  "name": "fusionify",
   "version": "0.0.0",
   "description": "An integrated dev environment for React components + less styling",
   "main": "index.js",
