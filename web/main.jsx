@@ -44,8 +44,8 @@ var Main = module.exports = React.createClass({
   },
   getRawData: function (comp, name) {
     var component = this.props.components[comp]
-      , data
-    if (name === '__default__') {
+      , data = {}
+    if (name === '__default__' && component.cls.componentConstructor.prototype.getDefaultProps) {
       data = component.cls.componentConstructor.prototype.getDefaultProps()
     } else {
       data = component.fixture[name]
@@ -115,6 +115,7 @@ var Main = module.exports = React.createClass({
   },
   */
   resetChild: function () {
+    if (!this.refs.display.state) return
     this.refs.display.replaceState(this.refs.display.getInitialState())
   },
   render: function () {
@@ -123,6 +124,7 @@ var Main = module.exports = React.createClass({
       , current = this.props.components[this.state.currentComponent]
       , props = Object.keys(current.fixture)
       , cprops = this.state.currentProps === '__default__' ? {} : current.fixture[this.state.currentProps]
+      , prefix = commonPrefix(names)
     cprops.ref = 'display'
     return (
       <div className='fusion-main'>
@@ -137,7 +139,7 @@ var Main = module.exports = React.createClass({
           <select onChange={this.selectComponent} className='fusion-components' value={this.state.currentComponent}>
             {
               names.map(function(name) {
-                return <option value={name}>{name}</option>
+                return <option value={name}>{name.slice(prefix.length)}</option>
               })
             }
           </select>
@@ -162,6 +164,20 @@ var Main = module.exports = React.createClass({
     )
   }
 })
+
+function commonPrefix(names) {
+  var common = names[0]
+  for (var i=1; i<names.length; i++) {
+    if (names[i].indexOf(common) === 0) continue
+    for (var j=1; j < common.length; j++) {
+      if (names[i].indexOf(common.slice(0, -j)) === 0) {
+        common = common.slice(0, -j)
+        break
+      }
+    }
+  }
+  return common
+}
 
 // vim: set tabstop=2 shiftwidth=2 expandtab:
 

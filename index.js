@@ -19,6 +19,7 @@ function fusion(file) {
     var jsonFixture = file.slice(0, -ext.length) + '.json'
     if (fs.existsSync(jsonFixture)) {
       text += '\nif (window.fusion) window.fusion.register(module.exports, "' + file + '", require("' + jsonFixture + '"));'
+      console.log('fixtured', file)
     }
     this.queue(text)
     this.queue(null)
