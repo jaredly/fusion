@@ -209,6 +209,9 @@ function commonPrefix(names) {
       }
     }
   }
+  if (common === names[0]) {
+    common = names[0].split('/').slice(0, -1).join('/') + '/'
+  }
   return common
 }
 
