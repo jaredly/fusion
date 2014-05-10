@@ -1,31 +1,44 @@
 /** @jsx React.DOM */
 
+var ModButton = require('./mod-button.jsx')
+  , Buttons = require('./buttons.jsx')
+
 var Main = module.exports = React.createClass({
   displayName: 'Main',
   getDefaultProps: function () {
     return {
       components: {},
+      nodes: {},
+      links: [],
       filename: null,
       load: function () {throw 'override'}
     }
   },
   getInitialState: function () {
     var names = Object.keys(this.props.components)
-      , component = this.props.components[names[0]]
+      , components = this.props.components
+      // , component = this.props.components[names[0]]
+      , currentName
+    names.some(function (name) {
+      if (components[name].fixture) {
+        currentName = name
+        return true
+      }
+    })
     return {
-      currentComponent: names[0],
+      currentComponent: currentName,
       currentProps: '__default__',
       propsName: '',
-      propsRaw: this.getRawData(names[0], '__default__')
+      propsRaw: this.getRawData(currentName, '__default__')
     }
   },
   changeProps: function (e) {
     this.setState({propsRaw: e.target.value})
   },
-  selectComponent: function (e) {
-    var name = e.target.value
+  selectComponent: function (name) {
     if (name === this.state.currentComponent) return
     var component = this.props.components[name]
+    if (!component.fixture) return
     this.setState({
       propsName: '',
       currentProps: '__default__',
@@ -33,8 +46,10 @@ var Main = module.exports = React.createClass({
       propsRaw: this.getRawData(name, '__default__')
     })
   },
-  selectProps: function (e) {
-    var name = e.target.value
+  onSelectComponent: function (e) {
+    this.selectComponent(e.target.value)
+  },
+  selectProps: function (name) {
     if (name === this.state.currentProps) return
     this.setState({
       propsName: name === '__default__' ? '' : name,
@@ -109,11 +124,6 @@ var Main = module.exports = React.createClass({
       propsRaw: e.target.value
     })
   },
-  /*
-  componentWillReceiveProps: function (oprops, ostate) {
-    this.resetChild()
-  },
-  */
   resetChild: function () {
     if (!this.refs.display.state) return
     this.refs.display.replaceState(this.refs.display.getInitialState())
@@ -122,35 +132,58 @@ var Main = module.exports = React.createClass({
     var components = this.props.components
       , names = Object.keys(components)
       , current = this.props.components[this.state.currentComponent]
-      , props = Object.keys(current.fixture)
-      , cprops = this.state.currentProps === '__default__' ? {} : current.fixture[this.state.currentProps]
+      , props = current ? Object.keys(current.fixture) : []
+      , cprops = (this.state.currentProps === '__default__' || !current) ? {} : current.fixture[this.state.currentProps]
       , prefix = commonPrefix(names)
+    var clickable = names.filter(function (name) {
+      return components[name].fixture
+    })
     cprops.ref = 'display'
     return (
       <div className='fusion-main'>
         <div ref='display' className='fusion-display'>
-          {current.cls(cprops)}
+          {current ? current.cls(cprops) : 'Loading...'}
         </div>
         <div className='fusion-sidebar'>
+          <div className='fusion-vis'>
+            <ModButton
+              nodes={this.props.nodes}
+              clickable={clickable}
+              links={this.props.links}
+              onSelect={this.selectComponent}
+              options={{
+                width: '400px',
+                height: '400px',
+                stabilize: false,
+                hierarchicalLayout: {
+                  direction: 'LR',
+                  nodeSpacing: 1000,
+                  levelSeparation: 200
+                },
+                nodes: {
+                  fontSize: 10,
+                },
+                edges: {
+                  style: 'arrow'
+                }
+              }}/>
+          </div>
           <div>
             <button onClick={this.props.close}>Close</button>
             <button onClick={this.props.reload}>Reload</button>
           </div>
-          <select onChange={this.selectComponent} className='fusion-components' value={this.state.currentComponent}>
+          <select onChange={this.onSelectComponent} className='fusion-components' value={this.state.currentComponent}>
             {
-              names.map(function(name) {
+              clickable.map(function(name) {
                 return <option value={name}>{name.slice(prefix.length)}</option>
               })
             }
           </select>
-          <select onChange={this.selectProps} className='fusion-props' value={this.state.currentProps}>
-            <option value='__default__'><em>default</em></option>
-            {
-              props.map(function (name) {
-                return <option value={name}>{name}</option>
-              })
-            }
-          </select>
+          <Buttons
+            onChange={this.selectProps}
+            className='fusion-props'
+            value={this.state.currentProps}
+            options={[['default', '__default__']].concat(props.map(function (name) {return [name, name]}))}/>
           <input value={this.state.propsName} onChange={this.changePropsName}/>
           <textarea
             className='fusion-props-raw'
@@ -166,6 +199,7 @@ var Main = module.exports = React.createClass({
 })
 
 function commonPrefix(names) {
+  if (!names.length) return ''
   var common = names[0]
   for (var i=1; i<names.length; i++) {
     if (names[i].indexOf(common) === 0) continue
