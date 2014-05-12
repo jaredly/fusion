@@ -131,7 +131,7 @@ var Main = module.exports = React.createClass({
   },
   resetChild: function () {
     if (this.refs.wrapper) return this.refs.wrapper.resetState()
-    if (!this.refs.display.state) return
+    if (!this.refs || !this.refs.display || !this.refs.display.state) return
     this.refs.display.replaceState(this.refs.display.getInitialState())
   },
   current: function (current, cprops) {
@@ -139,6 +139,13 @@ var Main = module.exports = React.createClass({
     if (!current.fixture._wrapState) {
       return current.cls(cprops)
     }
+    if (current.fixture._wrapState.wrapper) {
+      return current.fixture._wrapState.wrapper({
+        cls: current.cls,
+        props: cprops
+      })
+    }
+
     return StateWrapper({
       cls: current.cls,
       ref: 'wrapper',
