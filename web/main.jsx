@@ -2,6 +2,7 @@
 
 var ModButton = require('./mod-button.jsx')
   , Buttons = require('./buttons.jsx')
+  , StateWrapper = require('./state-wrapper')
 
 var Main = module.exports = React.createClass({
   displayName: 'Main',
@@ -25,11 +26,13 @@ var Main = module.exports = React.createClass({
         return true
       }
     })
+    var propNames = Object.keys(components[currentName].fixture)
+    var propName = propNames.length ? propNames[0] : '__default__'
     return {
       currentComponent: currentName,
-      currentProps: '__default__',
+      currentProps: propName,
       propsName: '',
-      propsRaw: this.getRawData(currentName, '__default__')
+      propsRaw: this.getRawData(currentName, propName)
     }
   },
   changeProps: function (e) {
@@ -39,11 +42,13 @@ var Main = module.exports = React.createClass({
     if (name === this.state.currentComponent) return
     var component = this.props.components[name]
     if (!component.fixture) return
+    var propNames = Object.keys(component.fixture)
+    var propName = propNames.length ? propNames[0] : '__default__'
     this.setState({
       propsName: '',
-      currentProps: '__default__',
+      currentProps: propName,
       currentComponent: name,
-      propsRaw: this.getRawData(name, '__default__')
+      propsRaw: this.getRawData(name, propName)
     })
   },
   onSelectComponent: function (e) {
@@ -125,8 +130,21 @@ var Main = module.exports = React.createClass({
     })
   },
   resetChild: function () {
+    if (this.refs.wrapper) return this.refs.wrapper.resetState()
     if (!this.refs.display.state) return
     this.refs.display.replaceState(this.refs.display.getInitialState())
+  },
+  current: function (current, cprops) {
+    if (!current) return <div className='fusion-main_loading'>Loading...</div>
+    if (!current.fixture._wrapState) {
+      return current.cls(cprops)
+    }
+    return StateWrapper({
+      cls: current.cls,
+      ref: 'wrapper',
+      props: cprops,
+      wrap: current.fixture._wrapState
+    })
   },
   render: function () {
     var components = this.props.components
@@ -135,6 +153,9 @@ var Main = module.exports = React.createClass({
       , props = current ? Object.keys(current.fixture) : []
       , cprops = (this.state.currentProps === '__default__' || !current) ? {} : current.fixture[this.state.currentProps]
       , prefix = commonPrefix(names)
+    props = props.filter(function (name) {
+      return name[0] !== '_'
+    })
     var clickable = names.filter(function (name) {
       return components[name].fixture
     })
@@ -142,7 +163,7 @@ var Main = module.exports = React.createClass({
     return (
       <div className='fusion-main'>
         <div ref='display' className='fusion-display'>
-          {current ? current.cls(cprops) : 'Loading...'}
+          {this.current(current, cprops)}
         </div>
         <div className='fusion-sidebar'>
           <div className='fusion-vis'>
