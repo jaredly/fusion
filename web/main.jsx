@@ -167,9 +167,13 @@ var Main = module.exports = React.createClass({
       return components[name].fixture
     })
     cprops.ref = 'display'
+    var display_style = {}
+    if (current.fixture._style) {
+      display_style = current.fixture._style
+    }
     return (
       <div className='fusion-main'>
-        <div ref='display' className='fusion-display'>
+        <div ref='display' className='fusion-display' style={display_style}>
           {this.current(current, cprops)}
         </div>
         <div className='fusion-sidebar'>
