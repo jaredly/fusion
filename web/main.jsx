@@ -136,6 +136,19 @@ var Main = module.exports = React.createClass({
   },
   current: function (current, cprops) {
     if (!current) return <div className='fusion-main_loading'>Loading...</div>
+
+    if (current.fixture._log) {
+      current.fixture._log.forEach(function (name) {
+        if (undefined !== cprops[name]) return
+        cprops[name] = function () {
+          console.log('Logging callback', name)
+          ;[].forEach.call(arguments, function (item) {
+            console.log('> ', item)
+          })
+        }
+      })
+    }
+
     if (!current.fixture._wrapState) {
       return current.cls(cprops)
     }

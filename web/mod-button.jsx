@@ -1,6 +1,8 @@
 /** @jsx React.DOM */
 
-var ModTree = require('modtree').ModTree
+// var ModTree = require('modtree').ModTree
+
+var ModTree = function () {return false}
 
 var ModButton = module.exports = React.createClass({
   displayName: 'ModButton',
